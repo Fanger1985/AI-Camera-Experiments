@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tensorflow.js Live Image Classifier</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>TensorFlow.js Live Image Classifier</h2>
+        <div class="glass">
+            <div class="fileContainer">
+                <span>Upload Image</span>
+                <input type="file" id="imageUpload" accept="image/*">
+            </div>
+
+            <button id="startCamera">Start Webcam</button>
+            <button id="toggleLive">Toggle Live Analysis</button>
+
+            <div id="camera">
+                <video id="webcam" autoplay></video>
+                <button id="capture">Capture Image</button>
+            </div>
+
+            <div id="result">Loading model...</div>
+        </div>
+    </div>
+
+    <!-- TensorFlow.js and MobileNet library scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.12.7/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@0.1.1"></script>
+
+    <script>
+        // The JavaScript code remains the same as in the previous version
+    </script>
+</body>
+</html>

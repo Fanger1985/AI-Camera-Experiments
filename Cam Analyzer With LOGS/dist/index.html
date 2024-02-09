@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - Confident  Dead Live Logs</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - Active Log Dead Log</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tensorflow.js Live Image Classifier</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: url('wallpaper1.png') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.7);
+        }
+
+.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: start; /* Align items to the top */
+    width: 100%;
+    max-width: 1800px; /* Adjusted for additional log */
+}
+
+#uniqueLog, #log {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.6);
+    height: 100vh;
+    overflow-y: auto;
+    padding: 20px;
+    text-align: left;
+    font-family: monospace;
+    margin: 20px;
+}
+
+#confidenceDisplay {
+    text-align: center;
+    color: yellow;
+    font-size: 1.5em; /* Adjust size as desired */
+    font-weight: bold;
+    padding: 10px;
+    margin-top: 10px; /* Space from the video feed */
+}
+
+        #camera {
+            flex: 4;
+            text-align: center;
+            margin: 20px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+#webcam {
+    border-radius: 10px; /* Soften corners of the video feed */
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5); /* Add shadow to the video feed */
+    object-fit: cover; /* This will ensure the video covers the rounded corners area without stretching */
+    width: 100%; /* Set width to fill the container */
+    height: auto; /* Set height to maintain aspect ratio */
+}
+
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+          <div id="uniqueLog">Unique Log:</div> <!-- New log for unique instances -->
+ 
+<div id="camera">
+  
+    <video id="webcam" autoplay></video>
+    <div id="confidenceDisplay"></div> <!-- New element for the confident prediction -->
+</div>
+
+        <div id="log">Analysis Log:</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.12.7/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@0.1.1"></script>
+    <script>
+      
+      let lastClassifiedObject = null;
+
+        console.log("TensorFlow.js in action!");
+
+        const webcamElement = document.getElementById('webcam');
+        const log = document.getElementById('log');
+
+        let model;
+        mobilenet.load().then(loadedModel => {
+            model = loadedModel;
+            startCamera();
+        });
+function startCamera() {
+    if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                webcamElement.srcObject = stream;
+                webcamElement.onloadedmetadata = () => {
+                    // Explicitly set the video size
+                    webcamElement.width = webcamElement.videoWidth;
+                    webcamElement.height = webcamElement.videoHeight;
+                    liveAnalysisLoop();
+                };
+            })
+            .catch(err => {
+                console.error("Webcam error: ", err);
+            });
+    }
+}
+
+function liveAnalysisLoop() {
+    if (webcamElement.readyState === webcamElement.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas');
+        canvas.width = webcamElement.videoWidth;
+        canvas.height = webcamElement.videoHeight;
+        canvas.getContext('2d').drawImage(webcamElement, 0, 0);
+
+        model.classify(canvas).then(predictions => {
+            updateLog(predictions);
+
+            let currentPrediction = predictions[0]; // Assuming the first prediction is the most confident one.
+
+            // Define a confidence threshold (e.g., 0.75 for 75%)
+            const confidenceThreshold = 0.75;
+
+            // Check if the confidence level is above the threshold and it's a new object
+            if (currentPrediction.probability > confidenceThreshold && lastClassifiedObject !== currentPrediction.className) {
+                updateUniqueLog(`High confidence object: ${currentPrediction.className}`);
+                lastClassifiedObject = currentPrediction.className;
+            }
+
+            requestAnimationFrame(liveAnalysisLoop);
+        });
+    } else {
+        requestAnimationFrame(liveAnalysisLoop); // Try again on next frame
+    }
+}
+
+
+function updateLog(predictions) {
+    // Clear the log if it's too full
+    while (log.children.length > 10) {
+        log.removeChild(log.firstChild);
+    }
+
+    // Find the most confident prediction
+    const mostConfidentPrediction = predictions.reduce((max, p) => p.probability > max.probability ? p : max, predictions[0]);
+
+    // Update the most confident prediction display
+    const confidenceDisplay = document.getElementById('confidenceDisplay');
+    confidenceDisplay.textContent = `${mostConfidentPrediction.className} - ${mostConfidentPrediction.probability.toFixed(2)}`;
+
+    // Highlight the most confident prediction and add to log
+    predictions.forEach(p => {
+        const entry = document.createElement('div');
+        entry.textContent = `${p.className} - ${p.probability.toFixed(6)}`;
+
+        // Apply a different style if this is the most confident prediction
+        if (p === mostConfidentPrediction) {
+            entry.style.backgroundColor = 'yellow';
+            entry.style.fontWeight = 'bold';
+            entry.style.color = 'black';
+        } else {
+            // Style for other predictions
+            entry.style.backgroundColor = '';
+            entry.style.fontWeight = '';
+            entry.style.color = '';
+        }
+
+        log.appendChild(entry);
+    });
+
+    // Scroll to the bottom to keep the latest entry visible
+    log.scrollTop = log.scrollHeight;
+}
+
+
+
+    </script>
+
+
+<script>
+// JavaScript to hide the cursor after inactivity
+let mouseTimer = null;
+const body = document.querySelector('body');
+
+function hideCursor() {
+    body.style.cursor = 'none'; // Hide the cursor
+}
+
+body.addEventListener('mousemove', () => {
+    clearTimeout(mouseTimer); // Clear the timer on movement
+    body.style.cursor = 'default'; // Show the cursor
+    mouseTimer = setTimeout(hideCursor, 5000); // Set the timer for 5 seconds
+});
+let uniqueItemsSet = new Set(); // Initialize an empty set
+
+function updateUniqueLog(uniqueMessage) {
+    const uniqueLog = document.getElementById('uniqueLog');
+
+    // Extracting the object name from the message
+    const objectName = uniqueMessage.split(": ")[1];
+
+    // Check if the item is already in the set
+    if (!uniqueItemsSet.has(objectName)) {
+        uniqueItemsSet.add(objectName); // Add the item to the set
+
+        const entry = document.createElement('div');
+        const objectNameSpan = document.createElement('span'); // Span for the object name
+
+        // Set text for the entry and the span
+        entry.textContent = "High Confidence Object: ";
+        objectNameSpan.textContent = objectName;
+
+        // Style the span (object name)
+        objectNameSpan.style.color = 'orange';
+        objectNameSpan.style.fontWeight = 'bold';
+
+        // Append the span to the entry
+        entry.appendChild(objectNameSpan);
+
+        // Style the entire entry (optional)
+        entry.style.color = 'white';
+
+        uniqueLog.appendChild(entry);
+        uniqueLog.scrollTop = uniqueLog.scrollHeight;
+    }
+}
+
+
+</script>
+
+
+
+
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
